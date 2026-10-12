@@ -9,6 +9,10 @@ dependencies = []
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# importlib 模式：不让 pytest 把插件根目录当包导入（否则会 import 插件入口
-# __init__.py，而它依赖只存在于宿主里的 plugin.sdk，本地测试必然失败）。
+# ★ 必须用 importlib 模式：默认的 prepend 模式会让 pytest 沿目录向上找到
+#   插件根目录的 `__init__.py`（它是插件入口，第 75 行 `from plugin.sdk.plugin
+#   import ...`，而 plugin.sdk 只存在于 N.E.K.O 宿主进程里），于是 59 个测试
+#   全部报 ModuleNotFoundError: No module named 'plugin'。
+#   importlib 模式按文件路径导入、不碰包根，测试文件自己把插件根目录插进
+#   sys.path（见 tests/test_offline.py 第 12 行）。
 addopts = "--import-mode=importlib"

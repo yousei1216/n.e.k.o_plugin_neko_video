@@ -236,11 +236,16 @@ def build_intro_text(
     spots = rhythm_hotspots(danmaku, top=6)
     if spots:
         pts = "；".join(
-            f"{h['at_label']} {h['emotion']}点×{h['count']}"
-            + (f"（“{h['sample']}”）" if h["sample"] else "")
-            for h in spots
+            f"{h['at_label']}（{h['count']}条）" for h in spots
         )
-        lines.append(f"观众反应高峰（之后播到这些点会分别提醒你）：{pts}")
+        # ★ 呈现方式（2026-10-11 关键修正）：**不能写成"观众反应高峰"** ——
+        #   实测她会直接复述"这个片子的观众反应高峰好多呀"，满嘴弹幕。
+        #   改成中性标注 + 明确声明"只是参考、别当主题讲"。
+        lines.append(
+            f"【参考·观众弹幕最密的时间点，不是主题】{pts}\n"
+            "（这些只是观众刷弹幕密的位置，**不是**这个视频的重点；"
+            "别去讲「观众反应高峰」这种话。）"
+        )
 
     # ★ 热评的"观点"往往比弹幕的"口号"有料（实测："让好汉查好汉，让ai审ai"
     #   这种金句全在评论里）。弹幕稀疏时把热评提到高光前面，优先喂她。
@@ -270,23 +275,23 @@ def build_intro_text(
 def build_hotspot_text(info: dict, hotspot: dict) -> str:
     """高光点提醒：视频播到某个峰值的这一刻。
 
-    ★ 设计（2026-10-11 重做）：**不描述画面**（她自己看得见屏幕），只说
-      "这里为什么值得说"——观众在这一秒集中反应、大家在刷什么。
-      给她"观众的笑点在哪"，她用自己的方式讲。
+    ★ 设计（2026-10-11 二次修正）：**不描述画面**（她自己看得见屏幕），
+      也**不把弹幕当主题**（实测她会满嘴"这里弹幕好多"）。
 
-    例：「《…》播到 3:20 了——这里是观众反应集中的一处（笑，12 条弹幕：
-         "笑容消失术"、"太好笑了"）」
+      正确的呈现：只告诉她"**这一刻是看点**"，弹幕作为**极小字号的附注**
+      （"观众在刷：…"），并把"情绪标签"（笑点/泪点）去掉——那是我的分类，
+      不是她的感受，写出来她就会念。
+
+    例：「《…》播到 3:20 了——**这里是值得留意的一刻**。
+         （观众也在刷：笑容消失术 / 太好笑了）」
     """
     title = (info.get("title") or "").strip()
     label = hotspot.get("at_label") or "?"
-    emotion = hotspot.get("emotion") or "吐槽"
-    count = hotspot.get("count") or 0
     sample = hotspot.get("sample") or ""
     extras = hotspot.get("samples") or []
 
-    quote = "、".join(f"“{t}”" for t in ([sample] + list(extras)) if t)
-    line = f"《{title}》播到 {label}——观众反应集中的一处（{emotion}，{count} 条弹幕"
+    quote = " / ".join(t for t in ([sample] + list(extras)) if t)
+    line = f"《{title}》播到 {label} 了——**这里是值得留意的一刻**。"
     if quote:
-        line += f"：{quote}"
-    line += "）"
+        line += f"\n（观众这时也在刷这些：{quote}）"
     return line
