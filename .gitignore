@@ -19,3 +19,4 @@ store.db
 # 本地生成的锁文件（非插件源码）
 uv.lock
 
+pt.txt
