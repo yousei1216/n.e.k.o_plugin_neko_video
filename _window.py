@@ -13,7 +13,7 @@
 from __future__ import annotations
 
 import ctypes
-import ctypes.wintypes as wt
+import sys
 
 __all__ = [
     "foreground_title",
@@ -24,14 +24,33 @@ __all__ = [
     "visible_titles",
 ]
 
-_user32 = ctypes.WinDLL("user32", use_last_error=True)
+# ★ 平台守卫：本模块是 Windows 专用（走 user32 读窗口标题）。
+#   官方发布校验在 **ubuntu-latest** 上跑 `pytest tests`，而 tests 会 import
+#   本模块 —— 如果在模块顶层无条件调 ctypes.WinDLL，Linux 上 import 阶段就
+#   抛 AttributeError（ctypes 没有 WinDLL），59 个测试全灭、Release 建不出来。
+#   所以这里做成"非 Windows 时优雅降级"：函数返回空结果，模块仍可导入。
+_IS_WINDOWS = sys.platform == "win32"
 
-_EnumWindows = _user32.EnumWindows
-_EnumWindowsProc = ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
-_GetWindowTextW = _user32.GetWindowTextW
-_GetWindowTextLengthW = _user32.GetWindowTextLengthW
-_IsWindowVisible = _user32.IsWindowVisible
-_GetForegroundWindow = _user32.GetForegroundWindow
+if _IS_WINDOWS:
+    import ctypes.wintypes as wt
+
+    _user32 = ctypes.WinDLL("user32", use_last_error=True)
+
+    _EnumWindows = _user32.EnumWindows
+    _EnumWindowsProc = ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+    _GetWindowTextW = _user32.GetWindowTextW
+    _GetWindowTextLengthW = _user32.GetWindowTextLengthW
+    _IsWindowVisible = _user32.IsWindowVisible
+    _GetForegroundWindow = _user32.GetForegroundWindow
+else:  # pragma: no cover - 非 Windows 平台只保证可导入
+    wt = None  # type: ignore[assignment]
+    _user32 = None
+    _EnumWindows = None
+    _EnumWindowsProc = None
+    _GetWindowTextW = None
+    _GetWindowTextLengthW = None
+    _IsWindowVisible = None
+    _GetForegroundWindow = None
 
 # 窗口标题里出现这些字样 = 这可能是 B站页面
 _BILI_MARKERS = ("哔哩哔哩", "bilibili", "Bilibili", "b23.tv")
