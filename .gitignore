@@ -15,3 +15,7 @@ build/
 store.db
 .env
 .DS_Store
+
+# 本地生成的锁文件（非插件源码）
+uv.lock
+
